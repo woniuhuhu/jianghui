@@ -45,4 +45,23 @@ local dispatch = function ( session,address,cmd,... )
     end
     skynet.retpack(table.unpack(ret,2))
 end
+
+function M.call(node,srv,...)
+    local mynode = skynet.getenv("node")
+    if node==mynode then
+        return skynet.call(srv,"lua",...)
+    else
+        return cluster.call(node,srv,...)
+    end
+end
+
+function M.send( node,srv,... )
+    local mynode = skynet.getenv("node")
+    if node==mynode then
+        return skynet.send(srv,"lua",...)
+    else
+        return cluster.send(node,srv,...)
+    end
+end
+
 return M
