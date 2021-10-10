@@ -10,7 +10,7 @@ local M = {
     --分发方法
     resp = {}, 
 }
-return M
+
 
 function init()
     skynet.dispatch("lua",dispatch)
@@ -45,3 +45,4 @@ local dispatch = function ( session,address,cmd,... )
     end
     skynet.retpack(table.unpack(ret,2))
 end
+return M
