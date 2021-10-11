@@ -53,11 +53,6 @@ local process_msg = function(fd,msgstr)
 	print(msgstr)
 end
 
-
-
-
-
-
 conns = {} --[fd] = conn
 players = {} --[playerid] = gateplayer
 --连接类
@@ -78,5 +73,41 @@ function gateplayer()
     return m 
 end
 
+local str_unpack = function(msgstr)
+	local msg = {}
+	while true do
+		local arg,rest = string.match(msgstr,"(.-),(.*)")
+		if arg then
+			msgstr = rest
+			table.insert(msg,arg)
+		else
+			table.insert(msg,msgstr)
+			break
+		end
+	end	
+		return msg[1],msg
+end
 
+local str_pack = function(cmd,msg)
+	return table.concat(msg,",").."\r\n"
+end
+
+local process_msg = function(fd,msgstr)
+	local cmd,msg = str_unpack(msgstr)
+	skynet.error("recv"..fd.."["..cmd.."] {"..table.concat(msg,",").."}")
+	local conn = conns[fd]
+	local playerid = conn.playerid
+	--not login
+	if not playerid then
+		local node = skynet.getenv("node")
+		local nodecfg = runconfig[node]
+		local loginid = math.random(1,#nodecfg.login)
+		local login = "login"..loginid
+		skynet.send(login,"lua","client",fd,cmd,msg)
+	else
+		local gplayer = players[playerid]
+		local agent = gplayer.agent
+		skynet.send(agent,"lua","client",cmd,msg)
+	end
+end
 s.start(...)
