@@ -23,7 +23,7 @@ end
 
 local process_msg = function(fd,msgstr)
 	local cmd,msg = str_unpack(msgstr)
-	skynet.error("recv"..fd.."["..cmd.."] {"..table.concat(msg,",").."}")
+	skynet.error("recv: "..fd.."["..cmd.."] {"..table.concat(msg,",").."}")
 	local conn = conns[fd]
 	local playerid = conn.playerid
 	--not login
@@ -49,7 +49,7 @@ local process_buff = function(fd,readbuff)
 	while true do
 		local msgstr,rest = string.match(readbuff,"(.-)\r\n(.*)")
 		if msgstr then
-			readbuff = rest.."nihao"
+			readbuff = rest
 			skynet.error(readbuff)
 			process_msg(fd,msgstr)
 		else
@@ -116,8 +116,41 @@ function s.init(  )
     skynet.error("listen socket:","0,0,0,0",port)
     socket.start(listenfd,connect)
 end
+s.resp.send_by_fd = function ( source,fd,msg )
+	if not conns[fd] then
+		return
+	end
+	local buff = str_pack(msg[1],msg)
+	skynet.error("send "..fd.."["..msg[1].."] {"..table.concat(msg,",").."}")
+	socket.write(fd,buff)
+end
 
+s.resp.send = function(source,playerid,msg)
+	local gplayer = players[playerid]
+	if gplayer == nil then
+		return
+	end
+	local c = gplayer.conn
+	if c == nil then
+		return 
+	end
+	s.resp.send_by_fd(nil,c.fd,msg)
+end
 
+s.resp.sure_agent = function(source,fd,playerid,agent)
+	local conn = conns[fd]
+	if not conn then 
+		skynet.call("agentmgr","lua","reqkick",playerid,"未完成登录即下线")
+		return false
+	end
+	conn.playerid = playerid
+	local gplayer = gateplayer()
+	gplayer.playerid = playerid
+	gplayer.agent = agent
+	gplayer.conn = conn
+	players[playerid] = gplayer
+	return true
+end
 
 
 
