@@ -2,6 +2,27 @@ local skynet = require "skynet"
 local s = require "service"
 local socket = require "skynet.socket"
 local runconfig = require "runconfig"
+
+conns = {} --[fd] = conn
+players = {} --[playerid] = gateplayer
+--连接类
+function conn()
+    local m = {
+        fd = nil,
+        player = nil,
+    }
+    return m
+end
+
+function gateplayer()
+    local m = {
+        playerid = nil,
+        agent = nil,
+        conn = nil,
+    }
+    return m 
+end
+
 local str_unpack = function(msgstr)
 	local msg = {}
 	while true do
@@ -25,6 +46,10 @@ local process_msg = function(fd,msgstr)
 	local cmd,msg = str_unpack(msgstr)
 	skynet.error("recv: "..fd.."["..cmd.."] {"..table.concat(msg,",").."}")
 	local conn = conns[fd]
+	for k, v in pairs(conn ) do
+		skynet.error(k, v)
+	end
+	skynet.error(conn)
 	local playerid = conn.playerid
 	--not login
 	if not playerid then
@@ -32,10 +57,12 @@ local process_msg = function(fd,msgstr)
 		local nodecfg = runconfig[node]
 		local loginid = math.random(1,#nodecfg.login)
 		local login = "login"..loginid
+		skynet.error("process_msg  :"..login)
 		skynet.send(login,"lua","client",fd,cmd,msg)
 	else
 		local gplayer = players[playerid]
 		local agent = gplayer.agent
+		skynet.error(gplayer,agent)
 		skynet.send(agent,"lua","client",cmd,msg)
 	end
 end
@@ -78,7 +105,7 @@ local recv_loop = function(fd)
 end
 
 local connect = function ( fd,addr )
-    print("connect from:"..addr.." "..fd)
+    skynet.error("connect from:"..addr.." "..fd)
     local c = conn()
     conns[fd] = c
     c.fd = fd
@@ -86,24 +113,6 @@ local connect = function ( fd,addr )
 end
 
 
-conns = {} --[fd] = conn
-players = {} --[playerid] = gateplayer
---连接类
-function conn()
-    local m = {
-        fd = nil,
-        player = nil,
-    }
-    return m
-end
-function gateplayer()
-    local m = {
-        playerid = nil,
-        agent = nil,
-        conn = nil,
-    }
-    return m 
-end
 function s.init(  )
     skynet.error("[start]"..s.name.." "..s.id)
     local node = skynet.getenv("node")
@@ -152,6 +161,34 @@ s.resp.sure_agent = function(source,fd,playerid,agent)
 	return true
 end
 
+local disconnect = function(fd)
+	local c = conns[fd]
+	if not c then
+		return
+	end
+	local playerid = c.playerid
+	if not playerid then
+		return
+	else
+		players[playerid] = nil
+		local reason = "断线"
+		skynet.call("agentmgr","lua","reqkick",playerid,reason)
+	end
+end
 
+s.resp.kick = function(source,playerid)
+	local gplayer = players[playerid]
+	if not gplayer then
+		return
+	end
+	local c = gplayer.conn
+	players[playerid] = nil
+	if not c then
+		return
+	end
+	conns[c.fd] = nil
+	disconnect(c.fd)
+	socket.close(c.fd)
+end
 
 s.start(...)
