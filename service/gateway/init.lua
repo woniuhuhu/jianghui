@@ -40,6 +40,27 @@ function gateplayer()
     }
     return m 
 end
+--3.6.8登出流程
+--[[
+	玩家有两种登出的情况，一种是客户端掉线，另一种是被顶替下线。
+	若是客户端掉线，3.6.2节的程序（赶紧翻回去看看）会调用代码3-21所示的disconnect方法。
+	按照3.5.2节的登出流程，gateway会向agentmgr发送下线请求“reqkick”，由agentmgr仲裁。
+]]
+--3-21
+local disconnect = function(fd)
+	local c = conns[fd]
+	if not c then
+		return
+	end
+	local playerid = c.playerid
+	if not playerid then
+		return
+	else
+		players[playerid] = nil
+		local reason = "断线"
+		skynet.call("agentmgr","lua","reqkick",playerid,reason)
+	end
+end
 --3.6.4解码和编码
 --[[
 	本节实现两个辅助方法str_unpack和str_pack，用于消息的解码和编码，见代码3-17。
@@ -316,27 +337,7 @@ s.resp.sure_agent = function(source,fd,playerid,agent)
 	players[playerid] = gplayer
 	return true
 end
---3.6.8登出流程
---[[
-	玩家有两种登出的情况，一种是客户端掉线，另一种是被顶替下线。
-	若是客户端掉线，3.6.2节的程序（赶紧翻回去看看）会调用代码3-21所示的disconnect方法。
-	按照3.5.2节的登出流程，gateway会向agentmgr发送下线请求“reqkick”，由agentmgr仲裁。
-]]
---3-21
-local disconnect = function(fd)
-	local c = conns[fd]
-	if not c then
-		return
-	end
-	local playerid = c.playerid
-	if not playerid then
-		return
-	else
-		players[playerid] = nil
-		local reason = "断线"
-		skynet.call("agentmgr","lua","reqkick",playerid,reason)
-	end
-end
+
 --3-22
 --[[
 	如果agentmgr仲裁通过，或是agentmgr想直接把玩家踢下线，在保存数据后，

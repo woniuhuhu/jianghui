@@ -11,20 +11,6 @@ local M = {
     resp = {}, 
 }
 
-
-function init()
-    skynet.dispatch("lua",dispatch)
-    if M.init then      
-        M.init()
-    end
-end
-
-function M.start(name,id,...)
-    M.name = name
-    M.id = tonumber(id)
-    skynet.start(init)
-end
-
 function traceback( err )
     skynet.error(tostring(err))
     skynet.error(debug.traceback())
@@ -37,13 +23,33 @@ local dispatch = function ( session,address,cmd,... )
         return
     end
     local ret = table.pack(xpcall(fun,traceback,address,...))
+    skynet.error(ret)
     local isok = ret[1]
-    
+    skynet.error(ret[1])
+    skynet.error(ret[2])
+    skynet.error(ret[3])
+    skynet.error(ret[4])
     if not isok then
         skynet.ret()
         return
     end
+    skynet.error(table.unpack(ret,2))
     skynet.retpack(table.unpack(ret,2))
+end
+
+
+function init()
+    skynet.dispatch("lua",dispatch)
+    if M.init then      
+        M.init()
+    end
+end
+
+function M.start(name,id,...)
+    M.name = name
+    M.id = tonumber(id)
+    skynet.error("jianghui  "..M.name,M.id)
+    skynet.start(init)
 end
 
 function M.call(node,srv,...)
