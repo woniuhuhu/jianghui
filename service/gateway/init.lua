@@ -133,10 +133,10 @@ end
 --3-18
 local process_msg = function(fd,msgstr)
 	local cmd,msg = str_unpack(msgstr)
-	skynet.error("3-18 recv: fd:"..fd.."   ["..cmd.."] {"..table.concat(msg,",").."}")
+	skynet.error("3-18 process_msg recv: fd:"..fd.."   ["..cmd.."] {"..table.concat(msg,",").."}")
 	local conn = conns[fd]
 	for k, v in pairs(conn ) do
-		skynet.error("3-18  "..k, v)
+		skynet.error("3-18 process_msg  "..k, v)
 	end
 	
 	local playerid = conn.playerid
@@ -146,12 +146,16 @@ local process_msg = function(fd,msgstr)
 		local nodecfg = runconfig[node]
 		local loginid = math.random(1,#nodecfg.login)
 		local login = "login"..loginid
-		skynet.error("3-18  连接的服务为  :"..login)
+		skynet.error("3-18 process_msg 向服务名为  :"..login.." 的服务发送消息")
+		--login = skynet.newservice("login","login",1)
 		skynet.send(login,"lua","client",fd,cmd,msg)
 	else
+		skynet.error(players.playerid)
+		skynet.error("@#$$%%^^&^%$%$##%^^^&&")
 		local gplayer = players[playerid]
+	--	skynet.error(gplayer.playerid.."  :登录以后")
 		local agent = gplayer.agent
-		skynet.error("3-18  "..gplayer,agent)
+	--	skynet.error("3-18 process_msg "..gplayer,agent)
 		skynet.send(agent,"lua","client",cmd,msg)
 	end
 end
@@ -188,7 +192,7 @@ local process_buff = function(fd,readbuff)
 		local msgstr,rest = string.match(readbuff,"(.-)\r\n(.*)")
 		if msgstr then
 			readbuff = rest
-			skynet.error("3-16: "..readbuff)
+			skynet.error("3-16 process_buff : "..readbuff)
 			process_msg(fd,msgstr)
 		else
 			return readbuff
@@ -219,16 +223,16 @@ end
 --协议格式cmd,arg1,arg2....#
 local recv_loop = function(fd)
 	socket.start(fd)
-	skynet.error("3-15 socket connect "..fd)
+	skynet.error("3-15   recv_loop  socket connect "..fd)
 	local readbuff = ""
 	while true do
 		local recvstr = socket.read(fd)
 		if recvstr then
 			readbuff = readbuff..recvstr
-			skynet.error("3-15: "..readbuff)
+			skynet.error("3-15 recv_loop : "..readbuff)
 			readbuff = process_buff(fd,readbuff)
 		else
-			skynet.error("3-15 skoket close"..fd)
+			skynet.error("3-15 recv_loop  skoket close"..fd)
 			disconnect(fd)
 			socket.close(fd)
 			return
@@ -272,7 +276,7 @@ end
 ]]
 --3-13
 function s.init(  )
-    skynet.error("3-13 [start]"..s.name.." "..s.id)
+    skynet.error("3-13 s.init [start]"..s.name.." "..s.id)
     local node = skynet.getenv("node")
     local nodecfg = runconfig[node]
     local port = nodecfg.gateway[s.id].port
@@ -280,7 +284,7 @@ function s.init(  )
 	skynet.error(socket)
 	local jh = "0.0.0.0:"..port  --这是什么情况，卧槽，必须这样才不会报错，我也不晓得咋的了~
     local listenfd = socket.listen(jh)
-    skynet.error("3-13 listen socket:","0,0,0,0",port)
+    skynet.error("3-13 s.init listen socket:","0,0,0,0",port)
     socket.start(listenfd,connect)
 end
 --3.6.6发送接口消息
@@ -302,7 +306,7 @@ s.resp.send_by_fd = function ( source,fd,msg )
 		return
 	end
 	local buff = str_pack(msg[1],msg)
-	skynet.error("（3-19） send "..fd.." ["..msg[1].."] {"..table.concat(msg,",").."}")
+	skynet.error("（3-19） s.resp.send_by_fd send "..fd.." ["..msg[1].."] {"..table.concat(msg,",").."}")
 	socket.write(fd,buff)
 end
 

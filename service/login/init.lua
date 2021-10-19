@@ -39,9 +39,33 @@ s.resp.client = function(source,fd,cmd,msg)
 end
 
 --代码3-24　service/login/init.lua的测试内容
+--s.client.login = function(fd,msg,source)
+  --  skynet.error("代码3-24　service/login/init.lua的测试内容,login recv "..msg[1])
+    --return {"login",-1,"测试"}
+--end
 s.client.login = function(fd,msg,source)
-    skynet.error("代码3-24　service/login/init.lua的测试内容,login recv "..msg[1].." "..msg[2])
-    return {"login",-1,"测试"}
+	local playerid = tonumber(msg[2])
+	local pw = tonumber(msg[3])
+	local gate = source
+	node = skynet.getenv("node")
+	--校验用户密码
+	if pw ~= 123 then
+		return {"login",1,"password is wrong"}
+	end
+	--发给 agentmgr
+    skynet.error(playerid)
+	local isok,agent = skynet.call("agentmgr","lua","reglogin",playerid,node,gate)
+    skynet.error("login  :"..playerid)
+    if not isok then
+		return {"login",1,"请求 mgr lost"}
+	end
+	--回应 gate
+	local isok = skynet.call(gate,"lua","sure_agent",fd,playerid,agent)
+	if not isok then
+		return {"login",1,"gate is lost"}
+	end
+	skynet.error("login succ"..playerid)
+	return {"login",0,"success"}
 end
 
 s.start(...)
