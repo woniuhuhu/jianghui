@@ -135,10 +135,6 @@ local process_msg = function(fd,msgstr)
 	local cmd,msg = str_unpack(msgstr)
 	skynet.error("3-18 process_msg recv: fd:"..fd.."   ["..cmd.."] {"..table.concat(msg,",").."}")
 	local conn = conns[fd]
-	for k, v in pairs(conn ) do
-		skynet.error("3-18 process_msg  "..k, v)
-	end
-	
 	local playerid = conn.playerid
 	--not login
 	if not playerid then
@@ -147,16 +143,14 @@ local process_msg = function(fd,msgstr)
 		local loginid = math.random(1,#nodecfg.login)
 		local login = "login"..loginid
 		skynet.error("3-18 process_msg 向服务名为  :"..login.." 的服务发送消息")
-		--login = skynet.newservice("login","login",1)
 		skynet.send(login,"lua","client",fd,cmd,msg)
 	else
-		skynet.error(players.playerid)
-		skynet.error("@#$$%%^^&^%$%$##%^^^&&")
+		skynet.error(playerid)
 		local gplayer = players[playerid]
-	--	skynet.error(gplayer.playerid.."  :登录以后")
 		local agent = gplayer.agent
-	--	skynet.error("3-18 process_msg "..gplayer,agent)
+		skynet.error("******************************")
 		skynet.send(agent,"lua","client",cmd,msg)
+	
 	end
 end
 

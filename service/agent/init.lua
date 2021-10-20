@@ -1,8 +1,13 @@
 local skynet = require "skynet"
 local s = require "service"
 s.client = {}
+require "scene"
 s.gate = nil
+s.resp.send = function ( source,msg )
+	skynet.send(s.gate,"lua","send",s.id,msg)
+end
 s.resp.kick = function(source)
+	s.leave_scene()
 	--在此处保存数据
 	skynet.error("在此处保存数据")
 	skynet.sleep(200)

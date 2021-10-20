@@ -31,5 +31,10 @@ skynet.start(function()
 		local proxy = cluster.proxy(anode,"agentmgr")
 		skynet.name("agentmgr",proxy)
 	end
+	--scene
+	for _,sid in pairs(runconfig.scene[mynode] or {}) do
+		local srv = skynet.newservice("scene","scene",sid)
+		skynet.name("scene"..sid,srv)
+	end
     skynet.exit()
 end)

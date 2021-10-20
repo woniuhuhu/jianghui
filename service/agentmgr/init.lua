@@ -21,8 +21,6 @@ function mgrplayer()
 end
 s.resp.reglogin = function(source,playerid,node,gate)
 	local mplayer = players[playerid]
-	skynet.error("@@@@@@@@@@@@")
-	skynet.error(mplayer)
 	--登录过程禁止顶替
 	if mplayer and mplayer.status == STATUS.LOGOUT then
 		skynet.error("reglogin fail,at status LOGOUT"..playerid)
