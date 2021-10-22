@@ -2,7 +2,7 @@ thread = 8
 cpath = "./skynet/cservice/?.so"
 bootstrap = "snlua bootstrap"
 
-start = "main"
+start = "pmain"
 harbor = 0
 
 lualoader = "./skynet/lualib/loader.lua"
