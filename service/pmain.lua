@@ -1,5 +1,25 @@
 local skynet = require "skynet"
 local cjson = require "cjson"
+local pb = require "protobuf"
+--protobuf编码
+function test4(  )
+    pb.register_file("./proto/login.pb")
+    --编码
+    local msg = {
+        id = 101,
+        pw = "123456",
+    }
+    local buff = pb.encode("login.Login",msg)
+    print("len: "..string.len(buff))
+    --解码
+    local umsg = pb.decode("login.Login",buff)
+    if umsg then
+        print("id:"..umsg.id)
+        print("pw: "..umsg.pw)
+    else
+        print("err")
+    end
+end
 function json_pack( cmd,msg )
     msg._cmd = cmd
     local body = cjson.encode(msg) --协议体字节流
@@ -73,6 +93,7 @@ end
 skynet.start(function()
     --test1()
     --test2()
-    test3()
+    --test3()
+    test4()
     skynet.exit()
 end)
