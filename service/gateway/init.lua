@@ -2,6 +2,11 @@ local skynet = require "skynet"
 local s = require "service"
 local socket = require "skynet.socket"
 local runconfig = require "runconfig"
+local closing = false
+--不再接受新连接4-29
+s.resp.shutdown = function ( ... )
+	closing = true
+end
 --3.6.1连接类和玩家类
 --[[
 	gateway需要使用两个列表，一个用于保存客户端连接信息，另一个用于记录已登录的玩家信息。
@@ -245,6 +250,10 @@ end
 ]]
 local connect = function ( fd,addr )
     skynet.error("3-14 connect from:"..addr.." "..fd)
+	if closing then
+		skynet.error("不再接受新连接")
+		return
+	end
     local c = conn()
     conns[fd] = c
     c.fd = fd

@@ -1,7 +1,7 @@
 return {
     cluster = {
         node1 = "127.0.0.1:7771",
-        node2 = "127.0.0.1:7772",
+        --node2 = "127.0.0.1:7772",
     },
     agentmgr = {node = "node1"},
     scene = {

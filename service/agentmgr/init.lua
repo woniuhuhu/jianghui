@@ -19,6 +19,37 @@ function mgrplayer()
 	}
 	return m
 end
+--获取在线人数
+function get_online_count( ... )
+	local count = 0
+	for playerid,player in pairs(players) do
+		count = count +1
+	end
+	return count
+end
+--将num数量的玩家踢下线
+s.resp.shutdown = function ( source,num )
+	--当前玩家数量
+	local count = get_online_count()
+	--踢下线
+	local n = 0
+	for playerid,player in pairs(players) do
+		skynet.fork(s.resp.reqkick,nil,playerid,"close server")
+		n = n+1  --计算总共发了num条下线消息
+		if n>= num then
+			break
+		end
+	end
+	--等待玩家数下线
+	while true do
+		skynet.sleep(200)
+		local new_count = get_online_count()
+		skynet.error("shutdown online: "..new_count)
+		if new_count <= 0 or new_count <= count-num then
+			return new_count
+		end
+	end
+end
 s.resp.reglogin = function(source,playerid,node,gate)
 	local mplayer = players[playerid]
 	--登录过程禁止顶替

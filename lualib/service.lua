@@ -19,11 +19,9 @@ end
 local dispatch = function ( session,address,cmd,... )
     local fun = M.resp[cmd]
     if not fun then
-        skynet.error("~~~"..cmd)
         skynet.ret()
         return
     end
-    skynet.error("!~~~!"..cmd)
     local ret = table.pack(xpcall(fun,traceback,address,...))
     skynet.error("[sercice->dispatch]","  ",ret)
     local isok = ret[1]
@@ -41,7 +39,6 @@ end
 
 function init()
     skynet.dispatch("lua",dispatch)
-    skynet.error(" $$$$$$$$$$$$$ "..M.name)
     if M.init then      
         M.init()
     end

@@ -1,6 +1,69 @@
 local skynet = require "skynet"
 local cjson = require "cjson"
 local pb = require "protobuf"
+local mysql = require "skynet.db.mysql"
+--4.20 
+function test7( ... )
+    local db = mysql.connect({
+        host="127.0.0.1",
+        port=3306,
+        database="message_board",
+        user="jianghui",
+        password="winjhs1125",
+        max_packet_size=1024*1024,
+        on_connect=nil
+        })
+    pb.register_file("./storage/playerdata.pb")
+    --读取数据库
+    local sql = string.format( "select * from baseinfo where playerid = 109" )
+    local res = db:query(sql)
+    --反序列化
+    local data = res[1].data
+    print("data len: "..string.len(data))
+    local udata = pb.decode("playerdata.BaseInfo",data)
+    if not udata then
+        print("err")
+        return false
+    end
+    --输出
+    local playerdata = udata
+    print("coin: "..playerdata.coin)
+    print("name: "..playerdata.name)
+    print("time: "..playerdata.last_login)
+end
+function test6( )
+    local db = mysql.connect({
+        host="127.0.0.1",
+        port=3306,
+        database="message_board",
+        user="jianghui",
+        password="winjhs1125",
+        max_packet_size=1024*1024,
+        on_connect=nil
+        })
+    pb.register_file("./storage/playerdata.pb")
+    --创角
+    local playerdata = {
+        playerid = 109,
+        coin = 999999999,
+        name = "jianghui",
+        level = 3,
+        last_login = os.time(),
+    }
+    --序列化
+    local data = pb.encode("playerdata.BaseInfo",playerdata)
+    print("data len: "..string.len(data))
+    --存入数据库
+    local sql = string.format( "insert into baseinfo (playerid,data) value (%d,%s)",109,mysql.quote_sql_str(data) )
+    local res = db:query(sql)
+    --查看存储结果
+    if res.err then
+        print("err : "..res.err)
+    else
+        print("ok")
+    end
+end
+
 --protobuf编码
 function test4(  )
     pb.register_file("./proto/login.pb")
@@ -91,9 +154,16 @@ function test3(  )
 end
 
 skynet.start(function()
+    
+    
+        
+    
+        
     --test1()
     --test2()
     --test3()
-    test4()
+    --test4()
+    --test6()
+    test7()
     skynet.exit()
 end)

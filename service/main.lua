@@ -6,6 +6,9 @@ skynet.start(function()
 	--初始化
 	local mynode = skynet.getenv("node")
 	local nodecfg = runconfig[mynode]
+	--admin
+	local admin = skynet.newservice("admin","admin",0)
+	skynet.name("admin",admin)
 	--节点管理
 	local nodemgr = skynet.newservice("nodemgr","nodemgr",0)
 	skynet.name("nodemgr",nodemgr)
