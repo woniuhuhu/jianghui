@@ -36,12 +36,15 @@ function conn()
     }
     return m
 end
-
+--玩家类
 function gateplayer()
     local m = {
         playerid = nil,
         agent = nil,
         conn = nil,
+		key = math.random( 1,999999999 ),
+		lost_conn_time = nil,
+		msgcache = {} --未发送的消息缓存
     }
     return m 
 end
@@ -58,12 +61,20 @@ local disconnect = function(fd)
 		return
 	end
 	local playerid = c.playerid
+	--还没完成登录
 	if not playerid then
 		return
+	--已在游戏中
 	else
-		players[playerid] = nil
-		local reason = "断线"
-		skynet.call("agentmgr","lua","reqkick",playerid,reason)
+		local gplayer = players[playerid]
+		gplayer.conn = nil
+		skynet.timeout(300*100,function (  )
+			if gplayer.conn ~= nil then
+				return
+			end
+			local reason = "断线超时"
+			skynet.call("agentmgr","lua","reqkick",playerid,reason)
+		end)
 	end
 end
 --3.6.4解码和编码
@@ -100,6 +111,41 @@ local str_unpack = function(msgstr)
 end
 local str_pack = function(cmd,msg)
 	return table.concat(msg,",").."\r\n"
+end
+--4-40
+local process_reconnect = function(fd,msg)
+	local playerid = tonumber(msg[2])
+	local key = tonumber(msg[3])
+	--conn
+	local conn = conns[fd]
+	if not conn then
+		skynet.error("reconnect fail, conn not exist")
+		return
+	end
+	--gplayer
+	local gplayer = players[playerid]
+	if not gplayer then
+		skynet.error("reconnect fail,player not exist")
+		return
+	end
+	if gplayer.conn then
+		skynet.error("reconnect fail,conn not break")
+		return
+	end
+	if gplayer.key ~= key then
+		skynet.error("reconnect fail,key error")
+		return
+	end
+	--绑定
+	gplayer.conn = conn
+	conn.playerid = playerid
+	--回应
+	s.resp.send_by_fd(nil,fd,{"reconnect",0})
+	--发送缓存消息
+	for i,cmsg in pairs(gplayer.msgcache) do
+		s.resp.send_by_fd(nil,fd,cmsg)
+	end
+	gplayer.msgcache = {}
 end
 --3.6.5 消息分发
 --[[
@@ -141,6 +187,11 @@ local process_msg = function(fd,msgstr)
 	skynet.error("3-18 process_msg recv: fd:"..fd.."   ["..cmd.."] {"..table.concat(msg,",").."}")
 	local conn = conns[fd]
 	local playerid = conn.playerid
+	--特殊断线重连
+	if cmd == "reconnect" then
+		process_reconnect(fd,msg)
+		return
+	end
 	--not login
 	if not playerid then
 		local node = skynet.getenv("node")
@@ -320,6 +371,11 @@ s.resp.send = function(source,playerid,msg)
 	end
 	local c = gplayer.conn
 	if c == nil then
+		table.insert(gplayer.msgcache,msg)
+		local len = #gplayer.msgcache
+		if len > 500 then
+			skynet.call("agentmgr","lua","reqkick",playerid,"gata消息缓存过多")
+		end
 		return 
 	end
 	s.resp.send_by_fd(nil,c.fd,msg)
